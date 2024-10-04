@@ -1,6 +1,6 @@
 # Compliance Backend
 
-Système de back-end pour la conformité d'une entreprise de services financiers réglementée.
+Back-end system for compliance of a regulated financial services company.
 
 ## Prérequis
 
