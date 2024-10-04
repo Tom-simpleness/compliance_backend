@@ -5,11 +5,11 @@ from ..entities.document import Document
 from ..value_objects.wallet_address import WalletAddress
 from ..value_objects.risk_score import RiskScore
 from ..enums.kyc_level import KycLevel
-import uuid
+from uuid import UUID
 
 @dataclass
 class User:
-    id: uuid.UUID
+    id: UUID
     identity: Identity
     wallet_address: WalletAddress
     kyc_level: KycLevel = KycLevel.NONE
@@ -25,3 +25,6 @@ class User:
 
     def _update_kyc_level(self):
         self.kyc_level = KycLevel(min(len(self.documents), KycLevel.ADVANCED.value))
+
+    def is_wallet_whitelisted(self, whitelist_service) -> bool:
+        return whitelist_service.is_whitelisted(self.wallet_address.value)
