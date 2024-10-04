@@ -41,9 +41,31 @@ class TestUser(unittest.TestCase):
         self.user.update_risk_score(75)
         self.assertEqual(self.user.risk_score.score, 75)
 
-    def test_kyc_level_update(self):
-        for i in range(4):
-            self.user.add_document(Document(uuid.uuid4(), f"Doc{i}", str(i), datetime(2030, 1, 1)))
+    def test_kyc_level_progression(self):
+        self.assertEqual(self.user.kyc_level, KycLevel.NONE)
+        
+        self.user.add_document(Document(uuid.uuid4(), "Passport", "123456", datetime(2030, 1, 1)))
+        self.assertEqual(self.user.kyc_level, KycLevel.BASIC)
+        
+        self.user.add_document(Document(uuid.uuid4(), "Driver's License", "789012", datetime(2025, 1, 1)))
+        self.assertEqual(self.user.kyc_level, KycLevel.INTERMEDIATE)
+        
+        self.user.add_document(Document(uuid.uuid4(), "Utility Bill", "345678", datetime(2023, 12, 31)))
+        self.assertEqual(self.user.kyc_level, KycLevel.ADVANCED)
+
+    def test_update_kyc_level(self):
+        self.user.update_kyc_level(KycLevel.PENDING)
+        self.assertEqual(self.user.kyc_level, KycLevel.PENDING)
+
+        self.user.update_kyc_level(KycLevel.BASIC)
+        self.assertEqual(self.user.kyc_level, KycLevel.BASIC)
+
+        self.user.update_kyc_level(KycLevel.FAILED)
+        self.assertEqual(self.user.kyc_level, KycLevel.FAILED)
+
+    def test_kyc_level_does_not_decrease_with_documents(self):
+        self.user.update_kyc_level(KycLevel.ADVANCED)
+        self.user.add_document(Document(uuid.uuid4(), "Passport", "123456", datetime(2030, 1, 1)))
         self.assertEqual(self.user.kyc_level, KycLevel.ADVANCED)
 
 if __name__ == '__main__':

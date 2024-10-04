@@ -1,10 +1,12 @@
 # tests/application/services/test_user_service.py
 import unittest
 from uuid import UUID, uuid4
+from unittest.mock import Mock
 from src.domain.entities.identity import Identity
 from src.domain.value_objects.address import Address
 from src.domain.value_objects.birth_date import BirthDate
 from src.domain.entities.document import Document
+from src.domain.enums.kyc_level import KycLevel
 from src.infrastructure.repositories.in_memory_user_repository import InMemoryUserRepository
 from src.infrastructure.repositories.in_memory_whitelist_repository import InMemoryWhitelistRepository
 from src.application.services.user_service import UserService
@@ -13,7 +15,12 @@ class TestUserService(unittest.TestCase):
     def setUp(self):
         self.user_repository = InMemoryUserRepository()
         self.whitelist_repository = InMemoryWhitelistRepository()
-        self.service = UserService(self.user_repository, self.whitelist_repository)
+        self.identity_verification_service = Mock()
+        self.service = UserService(
+            self.user_repository,
+            self.whitelist_repository,
+            self.identity_verification_service
+        )
         self.identity = Identity("John", "Doe", Address("123 Main St", "Anytown", "USA", "12345"), BirthDate("1990-01-01"))
         self.wallet_address = "0x1234567890123456789012345678901234567890"
 
@@ -23,6 +30,7 @@ class TestUserService(unittest.TestCase):
         self.assertIsNotNone(user.id)
         self.assertEqual(user.identity, self.identity)
         self.assertEqual(user.wallet_address.value, self.wallet_address)
+        self.assertEqual(user.kyc_level, KycLevel.NONE)
 
     def test_get_user(self):
         self.whitelist_repository.add_to_whitelist(self.wallet_address)
@@ -40,11 +48,27 @@ class TestUserService(unittest.TestCase):
     def test_add_document_to_user(self):
         self.whitelist_repository.add_to_whitelist(self.wallet_address)
         user = self.service.create_user(self.identity, self.wallet_address)
-        document = Document(uuid4(), "Passport", "123456", "2030-01-01")
+        document = Document(UUID(int=0), "Passport", "123456", "2030-01-01")
         self.service.add_document_to_user(user.id, document)
         updated_user = self.service.get_user(user.id)
         self.assertEqual(len(updated_user.documents), 1)
         self.assertEqual(updated_user.documents[0], document)
+
+    def test_request_identity_verification_success(self):
+        self.whitelist_repository.add_to_whitelist(self.wallet_address)
+        user = self.service.create_user(self.identity, self.wallet_address)
+        self.identity_verification_service.verify_identity.return_value = True
+        self.service.request_identity_verification(user.id)
+        updated_user = self.service.get_user(user.id)
+        self.assertEqual(updated_user.kyc_level, KycLevel.BASIC)
+
+    def test_request_identity_verification_failure(self):
+        self.whitelist_repository.add_to_whitelist(self.wallet_address)
+        user = self.service.create_user(self.identity, self.wallet_address)
+        self.identity_verification_service.verify_identity.return_value = False
+        self.service.request_identity_verification(user.id)
+        updated_user = self.service.get_user(user.id)
+        self.assertEqual(updated_user.kyc_level, KycLevel.FAILED)
 
 if __name__ == '__main__':
     unittest.main()

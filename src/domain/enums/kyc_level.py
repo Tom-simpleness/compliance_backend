@@ -2,7 +2,9 @@
 from enum import Enum
 
 class KycLevel(Enum):
-    NONE = 0
-    BASIC = 1
-    INTERMEDIATE = 2
-    ADVANCED = 3
+    NONE = "NONE"
+    PENDING = "PENDING"
+    BASIC = "BASIC"
+    INTERMEDIATE = "INTERMEDIATE"
+    ADVANCED = "ADVANCED"
+    FAILED = "FAILED"

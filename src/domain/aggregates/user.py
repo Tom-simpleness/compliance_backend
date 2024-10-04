@@ -24,7 +24,18 @@ class User:
         self.risk_score = RiskScore(score)
 
     def _update_kyc_level(self):
-        self.kyc_level = KycLevel(min(len(self.documents), KycLevel.ADVANCED.value))
+        document_count = len(self.documents)
+        if self.kyc_level == KycLevel.NONE or self.kyc_level == KycLevel.FAILED:
+            if document_count == 1:
+                self.kyc_level = KycLevel.BASIC
+            elif document_count == 2:
+                self.kyc_level = KycLevel.INTERMEDIATE
+            elif document_count >= 3:
+                self.kyc_level = KycLevel.ADVANCED
+        elif self.kyc_level == KycLevel.BASIC and document_count >= 2:
+            self.kyc_level = KycLevel.INTERMEDIATE
+        elif self.kyc_level == KycLevel.INTERMEDIATE and document_count >= 3:
+            self.kyc_level = KycLevel.ADVANCED
 
-    def is_wallet_whitelisted(self, whitelist_service) -> bool:
-        return whitelist_service.is_whitelisted(self.wallet_address.value)
+    def update_kyc_level(self, level: KycLevel):
+        self.kyc_level = level
