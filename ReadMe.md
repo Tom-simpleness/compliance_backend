@@ -11,7 +11,7 @@ Back-end system for compliance of a regulated financial services company.
 ## Installation rapide
 
 ```bash
-git clone [URL_DU_REPO]
+git clone https://github.com/Tom-simpleness/compliance_backend
 cd compliance_backend
 python -m venv venv
 source venv/bin/activate  # Sur Windows: venv\Scripts\activate
